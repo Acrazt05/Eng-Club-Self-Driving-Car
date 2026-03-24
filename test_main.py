@@ -6,7 +6,6 @@ from threading import Thread, Lock
 
 import paho.mqtt.client as paho
 from paho import mqtt
-from adafruit_servokit import ServoKit
 from dotenv import load_dotenv
 import os
 
@@ -14,7 +13,6 @@ import os
 load_dotenv()
 
 # ================= CONFIG =================
-
 MQTT_BROKER = os.getenv("MQTT_BROKER")
 MQTT_PORT = int(os.getenv("MQTT_PORT", 1883))
 MQTT_USERNAME = os.getenv("MQTT_USERNAME")
@@ -22,23 +20,6 @@ MQTT_PASSWORD = os.getenv("MQTT_PASSWORD")
 
 CONTROL_TOPIC = "car/control"
 TELEMETRY_TOPIC = "car/telemetry"
-
-# ServoKit setup (16-channel PCA9685)
-kit = ServoKit(channels=16)
-
-# Motor channels (continuous servos)
-MOTOR_CHANNELS = [0, 1, 2, 3]
-
-# Steering servo channels
-STEERING_LEFT = 4
-STEERING_RIGHT = 5
-
-# Neutral values
-MOTOR_STOP = 0.0
-STEERING_CENTER = 90  # degrees
-
-# Max steering angle offset (tune later)
-MAX_STEERING_ANGLE = 30
 
 # Deadzone for joystick input
 DEADZONE = 0.05
@@ -52,34 +33,19 @@ last_cmd_lock = Lock()
 
 # ==========================================
 
-
-# -------- MOTOR CONTROL --------
+# -------- MOTOR CONTROL (SIMULATED) --------
 def set_throttle(value):
-    """
-    value: -1 (full reverse) to 1 (full forward)
-    """
-    for ch in MOTOR_CHANNELS:
-        kit.continuous_servo[ch].throttle = value
-
+    """Simulate motor throttle"""
+    print(f"[SIM] Set throttle: {value:.2f}")
 
 def set_steering(value):
-    """
-    value: -1 (left) to 1 (right)
-    """
-    angle_offset = value * MAX_STEERING_ANGLE
-
-    left_angle = STEERING_CENTER + angle_offset
-    right_angle = STEERING_CENTER + angle_offset
-
-    kit.servo[STEERING_LEFT].angle = left_angle
-    kit.servo[STEERING_RIGHT].angle = right_angle
-
+    """Simulate steering servo"""
+    print(f"[SIM] Set steering: {value:.2f}")
 
 # -------- MQTT CALLBACKS --------
 def on_connect(client, userdata, flags, rc):
     print(f"Connected to MQTT with code {rc}")
     client.subscribe(CONTROL_TOPIC)
-
 
 def on_message(client, userdata, msg):
     global last_cmd_time
@@ -102,15 +68,13 @@ def on_message(client, userdata, msg):
         set_throttle(throttle)
         set_steering(steering)
 
-        # Update last command timestamp safely
         with last_cmd_lock:
             last_cmd_time = time.time()
 
-        print(f"Throttle: {throttle}, Steering: {steering}")
+        print(f"Throttle: {throttle:.2f}, Steering: {steering:.2f}")
 
     except Exception as e:
         print("Error processing message:", e)
-
 
 # -------- TELEMETRY --------
 def get_ip():
@@ -123,15 +87,9 @@ def get_ip():
     except:
         return "unknown"
 
-
 def get_cpu_temp():
-    try:
-        with open("/sys/class/thermal/thermal_zone0/temp", "r") as f:
-            temp = float(f.read()) / 1000.0
-            return temp
-    except:
-        return None
-
+    # Windows doesn't provide thermal_zone0
+    return None
 
 def telemetry_loop(client):
     while True:
@@ -146,7 +104,6 @@ def telemetry_loop(client):
         client.publish(TELEMETRY_TOPIC, json.dumps(data))
         time.sleep(2)
 
-
 # -------- FAILSAFE LOOP --------
 def failsafe_loop():
     global last_cmd_time
@@ -155,10 +112,7 @@ def failsafe_loop():
             elapsed = time.time() - last_cmd_time
         if elapsed > TIMEOUT:
             set_throttle(0)
-            # Optional: keep last steering or center it
-            # set_steering(0)
         time.sleep(0.1)
-
 
 # -------- MAIN --------
 def main():
@@ -167,7 +121,6 @@ def main():
 
     client = paho.Client()
 
-    # Set credentials if provided
     if MQTT_USERNAME and MQTT_PASSWORD:
         client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD)
         client.tls_set(tls_version=mqtt.client.ssl.PROTOCOL_TLS)
@@ -178,15 +131,12 @@ def main():
     client.connect(MQTT_BROKER, MQTT_PORT, 60)
 
     # Start telemetry thread
-    t1 = Thread(target=telemetry_loop, args=(client,), daemon=True)
-    t1.start()
+    Thread(target=telemetry_loop, args=(client,), daemon=True).start()
 
     # Start failsafe thread
-    t2 = Thread(target=failsafe_loop, daemon=True)
-    t2.start()
+    Thread(target=failsafe_loop, daemon=True).start()
 
     client.loop_forever()
-
 
 if __name__ == "__main__":
     try:

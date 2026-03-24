@@ -2,7 +2,7 @@
 
 TARGET_WIFI="GuestWifi"
 MAX_RETRIES=5
-LOGFILE="/home/pi/wifi.log"
+LOGFILE="/home/jacob/Desktop/Car/wifi.log"
 
 echo "===== WIFI START $(date) =====" >> $LOGFILE
 

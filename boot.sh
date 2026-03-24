@@ -7,7 +7,7 @@ echo "===== BOOT START $(date) =====" >> $LOGFILE
 
 # 1. Handle WiFi connection
 echo "[BOOT] Running WiFi setup..." >> $LOGFILE
-bash /home/pi/wifi_connect.sh
+bash /home/jacob/Desktop/Car/Eng-Club-Self-Driving-Car/wifi_connect.sh
 
 if [ $? -ne 0 ]; then
     echo "[BOOT] WiFi failed. Shutting down." >> $LOGFILE

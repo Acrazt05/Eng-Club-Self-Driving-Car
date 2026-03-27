@@ -72,11 +72,14 @@ def set_steering(value):
     """
     value: -1 (left) to 1 (right)
     servo range: 0 to 45 degrees
-    center: 22.5
+    center: 22.5 =~ 27
     """
 
-    # map -1..1 → 0..45
-    angle = (value + 1) * 22.5
+    if value == 0:
+        angle = 27
+    else:
+        # map -1..1 → 0..45
+        angle = (value + 1) * 22.5
 
     # clamp just to be safe
     angle = max(0, min(45, angle))

@@ -9,6 +9,8 @@ from paho import mqtt
 from adafruit_servokit import ServoKit
 from dotenv import load_dotenv
 import os
+import requests
+from bs4 import BeautifulSoup
 
 # Load .env file
 load_dotenv()
@@ -208,6 +210,25 @@ def failsafe_loop():
 # -------- MAIN --------
 
 def main():
+
+    ssid=os.popen("sudo iwgetid -r").read()
+
+    if(ssid=="GuestWifi\n"):
+        print("Connected to school wifi")
+
+        url = "http://198.18.32.1/reg"#/php?ah_goal=index.html&ah_log=true"
+        payload = {"url":"E2B8F3578D88E9E372C8A715DED910CE976547C419","checkbox":"checkbox"}
+        headers = {"Content-type":"application/x-www-form-urlencoded"}
+
+        response = requests.post(url, data=payload, headers=headers)
+
+        if response.status_code == 200:
+            soud = BeautifulSoup(response.text, "html.parser")
+            
+            print ("Connected to WiFi")
+        else:
+            raise ValueError(f"Resquest failed with status code {response.status_code}")
+    
     if not MQTT_BROKER:
         raise ValueError("MQTT_BROKER not set in .env")
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 LOGFILE="/home/jacob/Desktop/Car/boot.log"
-TARGET_WIFI="GuestWifi"
+TARGET_WIFI="GuestWifi\n"
 MAX_RETRIES=10
 
 echo "===== BOOT $(date) =====" >> $LOGFILE

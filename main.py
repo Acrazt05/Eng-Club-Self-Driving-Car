@@ -37,10 +37,9 @@ STEERING_RIGHT = 5
 
 # Neutral values
 MOTOR_STOP = 0.0
-STEERING_CENTER = 90
-
-# Max steering angle
-MAX_STEERING_ANGLE = 30
+STEERING_MIN = 0
+STEERING_MAX = 45
+STEERING_CENTER = 22.5
 
 # Deadzone
 DEADZONE = 0.05
@@ -70,14 +69,20 @@ def set_throttle(value):
 
 
 def set_steering(value):
-    angle_offset = value * MAX_STEERING_ANGLE
+    """
+    value: -1 (left) to 1 (right)
+    servo range: 0 to 45 degrees
+    center: 22.5
+    """
 
-    left_angle = STEERING_CENTER + angle_offset
-    right_angle = STEERING_CENTER + angle_offset
+    # map -1..1 → 0..45
+    angle = (value + 1) * 22.5
 
-    kit.servo[STEERING_LEFT].angle = left_angle
-    kit.servo[STEERING_RIGHT].angle = right_angle
+    # clamp just to be safe
+    angle = max(0, min(45, angle))
 
+    kit.servo[STEERING_LEFT].angle = angle
+    kit.servo[STEERING_RIGHT].angle = angle
 
 def stop_motors():
     for ch in MOTOR_CHANNELS:

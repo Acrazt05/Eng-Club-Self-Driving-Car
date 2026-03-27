@@ -1,40 +1,66 @@
 #!/bin/bash
 
 LOGFILE="/home/jacob/Desktop/Car/boot.log"
-REPO_DIR="/home/jacob/Desktop/Car/Eng-Club-Self-Driving-Car"
+TARGET_WIFI="GuestWifi"
+MAX_RETRIES=10
 
-echo "===== BOOT START $(date) =====" >> $LOGFILE
+echo "===== BOOT $(date) =====" >> $LOGFILE
 
-# 1. Handle WiFi connection
-echo "[BOOT] Running WiFi setup..." >> $LOGFILE
-bash /home/jacob/Desktop/Car/Eng-Club-Self-Driving-Car/wifi_connect.sh
+# Function: check internet
+check_internet() {
+    ping -c 1 -W 2 8.8.8.8 > /dev/null 2>&1
+    return $?
+}
 
-if [ $? -ne 0 ]; then
-    echo "[BOOT] WiFi failed. Shutting down." >> $LOGFILE
-    sudo shutdown now
-    exit 1
+# Wait until connected to SOME wifi
+echo "[BOOT] Waiting for WiFi connection..." >> $LOGFILE
+
+while true
+do
+    CURRENT_WIFI=$(iwgetid -r)
+
+    if [ -n "$CURRENT_WIFI" ]; then
+        echo "[BOOT] Connected to WiFi: $CURRENT_WIFI" >> $LOGFILE
+        break
+    fi
+
+    sleep 2
+done
+
+
+# If connected to GuestWifi we may need to accept terms
+if [ "$CURRENT_WIFI" = "$TARGET_WIFI" ]; then
+
+    echo "[BOOT] GuestWifi detected. Checking internet..." >> $LOGFILE
+
+    for i in $(seq 1 $MAX_RETRIES)
+    do
+        if check_internet; then
+            echo "[BOOT] Internet working." >> $LOGFILE
+            break
+        fi
+
+        echo "[BOOT] No internet. Sending captive portal request (attempt $i)" >> $LOGFILE
+
+        python3 /home/jacob/Desktop/Car/Eng-Club-Self-Driving-Car/connect_wifi.py >> $LOGFILE 2>&1
+
+        sleep 5
+    done
 fi
 
-echo "[BOOT] WiFi connected successfully." >> $LOGFILE
 
-# 2. Update GitHub repo
-echo "[BOOT] Updating repo..." >> $LOGFILE
-cd $REPO_DIR || exit 1
+# Wait until internet is confirmed
+echo "[BOOT] Waiting for internet..." >> $LOGFILE
 
-git fetch origin >> $LOGFILE 2>&1
-git reset --hard origin/main >> $LOGFILE 2>&1
+until check_internet
+do
+    sleep 2
+done
 
-if [ $? -ne 0 ]; then
-    echo "[BOOT] Git update failed. Not arming motors." >> $LOGFILE
-    exit 1
-fi
+echo "[BOOT] Internet confirmed." >> $LOGFILE
 
-echo "[BOOT] Repo updated successfully." >> $LOGFILE
 
-# 3. Arm motors
-echo "[BOOT] Arming motors..." >> $LOGFILE
-python3 arm_motors.py >> $LOGFILE 2>&1
+# Start main program
+echo "[BOOT] Starting MQTT control..." >> $LOGFILE
 
-# 4. Start main program
-echo "[BOOT] Starting main program..." >> $LOGFILE
-python3 main.py >> $LOGFILE 2>&1
+python3 /home/jacob/Desktop/Car/Eng-Club-Self-Driving-Car/main.py >> $LOGFILE 2>&1

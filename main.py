@@ -215,7 +215,6 @@ def failsafe_loop():
 # -------- MAIN --------
 
 def main():
-    """
     ssid=os.popen("sudo iwgetid -r").read()
 
     if(ssid=="GuestWifi\n"):
@@ -231,9 +230,8 @@ def main():
             soud = BeautifulSoup(response.text, "html.parser")
             
             print ("Connected to WiFi")
-        else:
-            raise ValueError(f"Resquest failed with status code {response.status_code}")
-    """
+        #else:
+        #    raise ValueError(f"Resquest failed with status code {response.status_code}")
 
     if not MQTT_BROKER:
         raise ValueError("MQTT_BROKER not set in .env")

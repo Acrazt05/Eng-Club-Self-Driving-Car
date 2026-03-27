@@ -52,7 +52,7 @@ TIMEOUT = 1.0
 last_cmd_time = time.time()
 last_cmd_lock = Lock()
 
-motors_armed = False
+motors_armed = True
 
 # ==========================================
 
@@ -210,7 +210,7 @@ def failsafe_loop():
 # -------- MAIN --------
 
 def main():
-
+    """
     ssid=os.popen("sudo iwgetid -r").read()
 
     if(ssid=="GuestWifi\n"):
@@ -228,7 +228,8 @@ def main():
             print ("Connected to WiFi")
         else:
             raise ValueError(f"Resquest failed with status code {response.status_code}")
-    
+    """
+
     if not MQTT_BROKER:
         raise ValueError("MQTT_BROKER not set in .env")
 
